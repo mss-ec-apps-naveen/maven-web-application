@@ -1,0 +1,94 @@
+pipeline
+{
+agent any
+  
+tools{
+maven 'maven3.8.3'
+}
+
+triggers {
+  pollSCM('* * * * *')
+  //cron('* * * * *')
+}
+
+options {
+//added time stamps
+  timestamps()
+//discard old builds
+
+  buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')
+
+}
+
+stages{
+//get code from Github
+       stage('CheckoutCode'){
+       steps{
+           
+         git branch: 'development', credentialsId: '1b7d1b24-dfee-413c-8ad2-49cd45ee36be', 
+           url: 'https://github.com/mss-ec-apps-naveen/maven-web-application.git'
+       }
+}
+//Do the Build
+      
+       stage('Build'){
+       steps{
+       sh "mvn clean package"
+}
+}
+//execute sonar cube report
+        
+ stage('ExecuteSonarqubeReport'){
+       steps{
+       sh "mvn clean sonar:sonar"
+}
+}
+//upload Artifct into nexus serer
+
+
+ stage('UploadintoNexus'){
+       steps{
+       sh "mvn clean deploy"
+}
+}
+//Deploy into Tomcat server
+
+
+ stage('DeployintoTomcat'){
+       steps{
+sshagent(['524e626e-a892-4586-841c-a004dd905aa3']) {
+   sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@65.1.147.179:/opt/apache-tomcat-9.0.56/webapps/"
+   
+}
+      
+}
+}
+
+
+
+ }//stages
+
+post {
+  always {
+   emailext body: '''build over
+
+Regards
+naveeen''', subject: 'Build over', to: 'naveenkumar1051@gmail.com'
+  }
+  success {
+    emailext body: '''build success
+
+Regards
+naveeen''', subject: 'Build over', to: 'naveenkumar1051@gmail.com'
+  }
+  failure {
+    emailext body: '''build failure
+
+Regards
+naveeen''', subject: 'Build over', to: 'naveenkumar1051@gmail.com'
+  }
+  
+}
+
+
+}//pipeline
