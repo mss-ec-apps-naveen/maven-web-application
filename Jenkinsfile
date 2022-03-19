@@ -63,6 +63,6 @@ Naveenkumar''', subject: 'Build Over', to: 'naveenkumar1051@gmail.com'
   }
 
 
-
+notifyBuild(currentBuild,result)
 
 }
